@@ -3,7 +3,7 @@ from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
-from sentence_transformers import SentenceTransformer
+#from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 
@@ -21,7 +21,7 @@ app.add_middleware(
 
 YOUTUBE_API_KEY=os.getenv("YOUTUBE_API_KEY")
 youtube = build('youtube','v3',developerKey=YOUTUBE_API_KEY)
-ai_model = SentenceTransformer('all-MiniLM-L6-v2')
+#ai_model = SentenceTransformer('all-MiniLM-L6-v2')
 
 video_database = []
 
@@ -62,14 +62,14 @@ def search_karaoke(q:str):
             thumbnail = high_thumb.get("url", "")
 
             # AI Step: Generate text embedding vector based on the video title
-            vector = ai_model.encode(title).tolist()
+            #vector = ai_model.encode(title).tolist()
 
             video_data = {
                 "id": video_id,
                 "title": title,
                 "description": description,
                 "thumbnail": thumbnail,
-                "vector": vector
+                #"vector": vector
             }
 
             # Save to database cache if it's new
