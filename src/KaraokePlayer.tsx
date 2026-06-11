@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import CustomYoutubePlayer from "./CustomYoutubePlayer";
 // Using YouTube iframe embed instead of react-player
 interface YouTubeVideo {
@@ -11,7 +11,9 @@ const KaraokePlayer = () => {
   const [videos, setVideos] = useState<YouTubeVideo[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedVideoId, setSelectedVideoId] = useState<string>("");
-
+  const [selectedVideoTitle, setSelectedVideoTitle] = useState<string>("");
+  const [loading, setLoading] = useState(false);
+  const [recommendations, setRecommendations] = useState<YouTubeVideo[]>([]);
   const API_ENDPOINT =
     import.meta.env.REACT_APP_API_ENDPOINT || "http://localhost:8000";
 
@@ -26,10 +28,60 @@ const KaraokePlayer = () => {
       );
       const data = await res.json();
       setVideos(data.results || []);
-      console.log("Search results:", data.results);
+      setSearchQuery("");
     } catch (err) {
       console.error("Failed to search Youtube:", err);
     }
+  };
+
+  useEffect(() => {
+    const fetchRecommendations = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(`${API_ENDPOINT}/recommendations`);
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.status}`);
+        }
+        const data = await response.json();
+        setRecommendations(data);
+      } catch (error) {
+        console.error("Error fetching recommendations:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRecommendations();
+  }, []);
+
+  // Utility: Fisher-Yates shuffle a copy of the array
+  function shuffle<T>(arr: T[]): T[] {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = a[i];
+      a[i] = a[j];
+      a[j] = tmp;
+    }
+    return a;
+  }
+
+  // When a recommendation is clicked: play it, remove from list, and reshuffle remaining
+  const handleRecommendationClick = (id: string, title: string) => {
+    setSelectedVideoId(id);
+    setSelectedVideoTitle(title);
+    setRecommendations((prev) => {
+      const filtered = prev.filter((v) => {
+        const vid = (v as any).videoId ?? (v as any).id ?? (v as any).video_id ?? "";
+        return vid !== id;
+      });
+      return shuffle(filtered);
+    });
+  };
+
+  const handleSearchResultClick = (video: YouTubeVideo) => {
+    setSelectedVideoId(video.videoId);
+    setSelectedVideoTitle(video.title);
+    setVideos([]);
   };
 
   return (
@@ -39,6 +91,7 @@ const KaraokePlayer = () => {
         margin: "0 auto",
         padding: "20px",
         fontFamily: "sans-serif",
+        marginTop: "-10px",
       }}
     >
       {/* 1. SEARCH BOX CONTAINER */}
@@ -78,21 +131,18 @@ const KaraokePlayer = () => {
       </form>
 
       {/* Main App Workspace View */}
-      <div style={{ display: "flex", gap: "20px" }}>
+      <div style={{ display: "flex", gap: "20px" , marginTop: "-20px"}}>
         {/* LEFT COLUMN: Main Karaoke Video Screen */}
         <div style={{ flex: 2 }}>
-          {selectedVideoId ? (
-            <div>
-              <CustomYoutubePlayer videoId={selectedVideoId || "ypcVYB9T32o"} />
-              <h2 style={{ marginTop: "15px" }}>Now Playing </h2>
-              <span>{videos.find(v => v.videoId === selectedVideoId)?.title || ""}</span>
-            </div>
-          ) : (
-            <p>Select a video to begin playing</p>
-          )}
+          <CustomYoutubePlayer videoId={selectedVideoId || "ypcVYB9T32o"} />
+          <h2 style={{ marginTop: "15px" }}>Now Playing : {selectedVideoTitle} </h2>
+          <span>
+            {selectedVideoTitle || videos.find((v) => v.videoId === selectedVideoId)?.title || "Default Video"}
+          </span>
         </div>
 
         {/* RIGHT COLUMN: Search Results + AI Sidebar Recommendations */}
+
         <div
           style={{
             flex: 1,
@@ -102,46 +152,77 @@ const KaraokePlayer = () => {
             height: "fit-content",
           }}
         >
-          <h3 style={{ marginTop: 0 }}>Up Next (AI Recommended)</h3>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "12px",
-              maxHeight: "60vh",
-              overflowY: "auto",
-              paddingRight: "6px",
-            }}
-          >
-            {videos.map((video) => (
-              <div
-                key={video.videoId}
-                onClick={() => setSelectedVideoId(video.videoId)}
-                style={{
-                  cursor: "pointer",
-                  display: "flex",
-                  gap: "10px",
-                  marginBottom: "10px",
-                  background: "#f0f0f0",
-                  padding: "5px",
-                }}
-              >
-                <img
-                  src={video.thumbnail}
-                  alt={video.title}
-                  style={{ width: "120px" }}
-                />
-                <p
+          {videos.length > 0 ? (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+                maxHeight: "100vh",
+                overflowY: "auto",
+                paddingRight: "6px",
+              }}
+            >
+              {videos.map((video) => (
+                <div
+                  key={video.videoId}
+                  onClick={() => handleSearchResultClick(video)}
                   style={{
-                    fontWeight:
-                      selectedVideoId === video.videoId ? "bold" : "normal",
+                    cursor: "pointer",
+                    display: "flex",
+                    gap: "10px",
+                    marginBottom: "10px",
+                    background: "#f0f0f0",
+                    padding: "5px",
                   }}
                 >
-                  {video.title}
-                </p>
-              </div>
-            ))}
-          </div>
+                  <img
+                    src={video.thumbnail}
+                    alt={video.title}
+                    style={{ width: "120px" }}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+                maxHeight: "100vh",
+                overflowY: "auto",
+                paddingRight: "6px",
+              }}
+            >
+              {loading ? (
+                <p>Loading your karaoke list...</p>
+              ) : (
+                recommendations.map((video) => {
+                  const vid = (video as any).videoId ?? (video as any).id ?? (video as any).video_id ?? "";
+                  const title = (video as any).title ?? (video as any).name ?? "Untitled";
+                  const thumb = (video as any).thumbnail ?? (video as any).thumbnailUrl ?? "";
+                  return (
+                    <div
+                      key={vid || title}
+                      onClick={() => vid && handleRecommendationClick(vid, title)}
+                      style={{
+                        cursor: "pointer",
+                        display: "flex",
+                        gap: "8px",
+                        marginBottom: "10px",
+                        background: "#f0f0f0",
+                        padding: "5px",
+                      }}
+                    >
+                      <img src={thumb} alt={title} style={{ width: "120px" }} />
+              
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -37,7 +37,7 @@ def search_karaoke(q:str):
         request = youtube.search().list(
             q=search_query,
             part="snippet",
-            maxResults=1,
+            maxResults=5,
             type="video"
         )
         response = request.execute()
@@ -76,8 +76,6 @@ def search_karaoke(q:str):
             if not any(v['id'] == video_id for v in video_database):
                 video_database.append(video_data)
 
-            # 🌟 FIXED FOR YOUR REACT TRANSITION 🌟
-            # Changed 'id' to 'videoId' to perfectly align with what your React hooks expect!
             results.append({
                 "videoId": video_id,
                 "title": title,
@@ -89,46 +87,59 @@ def search_karaoke(q:str):
     except Exception as e:
         # This will send the actual error text to your browser console rather than a mystery 500 error page
         raise HTTPException(status_code=500, detail=str(e))
-
-# @app.get("/recommendations")
-# def get_recommendations(video_id:str):
-
-#     search_query = f"pop karaoke, oldies karaoke, rock karaoke, country karaoke, rap karaoke"
-
-#     request = youtube.search().list(
-#         q=search_query,
-#         part="snippet",
-#         maxResults=5,
-#         type="video"
-#     )
-
-#     response = request.execute()
-
-#     """Calculates the closest AI vector match to populate the sidebar recommendations."""
-#     # Find the current video in our system
-#     current_video = next((v for v in video_database if v['id'] == video_id),None)
-#     if not current_video:
-#         return []
     
-    
-#     current_vector = np.array([current_video["vector"]])
 
-#     # Calculate similarity score against all other videos in the database
-#     recommendations = []
-#     for v in video_database:
-#         if v["id"]==video_id:
-#             continue # Skip comparing the song against itself
+@app.get("/recommendations")
+def get_recommendations():
+    """Fetches a fixed set of 20 default Pop and OPM karaoke recommendations."""
+    # Your requested default hardcoded search queries
+    search_query = "cebuano love atomic karaoke, old love songs karaoke"
 
-#         target_vector = np.array([v["vector"]])
-#         similarity = cosine_similarity(current_vector,target_vector)[0][0]
+    try:
+        # Request modified to fetch 20 results as requested
+        request = youtube.search().list(
+            q=search_query,
+            part="snippet",
+            maxResults=100,  # Modified to 20
+            type="video"
+        )
+        response = request.execute()
 
-#         recommendations.append({
-#             "id":v["id"],
-#             "title":v["title"],
-#             "thumbnail":v["thumbnail"],
-#             "score": float(similarity)
-#         })
+        recommendations = []
+        for item in response.get("items", []):
+            item_id_info = item.get("id", {})
+            video_id = item_id_info.get("videoId")
+            
+            if not video_id:
+                continue
 
-#     # Sort recommendations by highest AI similarity score first
-#     recommendations.sort(key=lambda x:x["score"],reverse=True)
-#     return recommendations[:5] # Return top 5 matching songs 
+            snippet = item.get("snippet", {})
+            title = snippet.get("title", "Unknown Title")
+            description = snippet.get("description", "")
+            
+            thumbnails = snippet.get("thumbnails", {})
+            high_thumb = thumbnails.get("high", {})
+            thumbnail = high_thumb.get("url", "")
+
+            video_data = {
+                "id": video_id,
+                "title": title,
+                "description": description,
+                "thumbnail": thumbnail
+            }
+
+            # Cache it to your video database if it's unique
+            if not any(v['id'] == video_id for v in video_database):
+                video_database.append(video_data)
+
+            # Structure the response format neatly for your frontend
+            recommendations.append({
+                "id": video_id,
+                "title": title,
+                "thumbnail": thumbnail
+            })
+
+        return recommendations
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

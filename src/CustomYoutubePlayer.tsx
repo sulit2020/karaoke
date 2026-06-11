@@ -34,7 +34,7 @@ const CustomYoutubePlayer = ({ videoId }: CustomYoutubePlayerProps) => {
 
       player = new window.YT.Player(youtubeTargetDiv, {
         height: "390",
-        width: "640",
+        width: "540",
         videoId: videoId, // 3. Use the destructured prop here
         playerVars: {
           autoplay: 0,
