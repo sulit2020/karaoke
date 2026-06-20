@@ -15,7 +15,7 @@ const KaraokePlayer = () => {
   const [loading, setLoading] = useState(false);
   const [recommendations, setRecommendations] = useState<YouTubeVideo[]>([]);
   const API_ENDPOINT =
-    import.meta.env.API_ENDPOINT || "http://localhost:8000";
+    import.meta.env.VITE_API_ENDPOINT || "http://localhost:8000";
 
   const handleSearchSubmit = async (
     event: React.FormEvent<HTMLFormElement>,
