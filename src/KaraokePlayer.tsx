@@ -88,7 +88,6 @@ const KaraokePlayer = () => {
     <div
       style={{
         maxWidth: "1200px",
-        margin: "0 auto",
         padding: "20px",
         fontFamily: "sans-serif",
         marginTop: "-10px",
@@ -133,7 +132,7 @@ const KaraokePlayer = () => {
       {/* Main App Workspace View */}
       <div style={{ display: "flex", gap: "20px" , marginTop: "-20px"}}>
         {/* LEFT COLUMN: Main Karaoke Video Screen */}
-        <div style={{ flex: 2 }}>
+        <div style={{ flex: 8 }}>
           <CustomYoutubePlayer videoId={selectedVideoId || "ypcVYB9T32o"} />
           <h2 style={{ marginTop: "15px" }}>Now Playing : {selectedVideoTitle} </h2>
           <span>
@@ -145,7 +144,7 @@ const KaraokePlayer = () => {
 
         <div
           style={{
-            flex: 1,
+            flex: 2,
             backgroundColor: "#f5f5f5",
             padding: "15px",
             borderRadius: "8px",
@@ -179,7 +178,7 @@ const KaraokePlayer = () => {
                   <img
                     src={video.thumbnail}
                     alt={video.title}
-                    style={{ width: "120px" }}
+                    style={{ width: "180px" }}
                   />
                 </div>
               ))}
@@ -215,7 +214,7 @@ const KaraokePlayer = () => {
                         padding: "5px",
                       }}
                     >
-                      <img src={thumb} alt={title} style={{ width: "120px" }} />
+                      <img src={thumb} alt={title} style={{ width: "180px" }} />
               
                     </div>
                   );
