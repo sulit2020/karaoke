@@ -90,23 +90,32 @@ def search_karaoke(q:str):
     
 
 @app.get("/recommendations")
-def get_recommendations():
+def get_recommendations(videoId: str):
     """Fetches a fixed set of 20 default Pop and OPM karaoke recommendations."""
     # Your requested default hardcoded search queries
-    search_query = "cebuano love atomic karaoke, old love songs karaoke"
 
     try:
         # Request modified to fetch 20 results as requested
-        request = youtube.search().list(
-            q=search_query,
-            part="snippet",
-            maxResults=100,  # Modified to 20
-            type="video"
+        details = youtube.videos().list(
+            part="snippet,contentDetails,statistics",
+            id=videoId
         )
-        response = request.execute()
+        
+        details_response = details.execute()
+        tags = details_response['items'][0]['snippet']['tags']
+        query_tags = " ".join(tags[0:3])  # Limit to first 10 tags to avoid overly long queries
+        
+        new_search_query = youtube.search().list(
+            part="snippet",
+            q=query_tags,
+            type="video",
+            maxResults=10
+        )
+        
+        new_search_response = new_search_query.execute()
 
         recommendations = []
-        for item in response.get("items", []):
+        for item in new_search_response.get("items", []):
             item_id_info = item.get("id", {})
             video_id = item_id_info.get("videoId")
             

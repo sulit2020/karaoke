@@ -10,7 +10,7 @@ interface YouTubeVideo {
 const KaraokePlayer = () => {
   const [videos, setVideos] = useState<YouTubeVideo[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [selectedVideoId, setSelectedVideoId] = useState<string>("");
+  const [selectedVideoId, setSelectedVideoId] = useState<string>("ypcVYB9T32o");
   const [selectedVideoTitle, setSelectedVideoTitle] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [recommendations, setRecommendations] = useState<YouTubeVideo[]>([]);
@@ -38,7 +38,10 @@ const KaraokePlayer = () => {
     const fetchRecommendations = async () => {
       setLoading(true);
       try {
-        const response = await fetch(`${API_ENDPOINT}/recommendations`);
+        const response = await fetch(
+          `${API_ENDPOINT}/recommendations?videoId=${selectedVideoId}`,
+        );
+        console.log("Recommendations response:", response);
         if (!response.ok) {
           throw new Error(`Server error: ${response.status}`);
         }
@@ -50,8 +53,10 @@ const KaraokePlayer = () => {
         setLoading(false);
       }
     };
-    fetchRecommendations();
-  }, []);
+    if (selectedVideoId) {
+      fetchRecommendations();
+    }
+  }, [selectedVideoId]);
 
   // Utility: Fisher-Yates shuffle a copy of the array
   function shuffle<T>(arr: T[]): T[] {
@@ -71,7 +76,8 @@ const KaraokePlayer = () => {
     setSelectedVideoTitle(title);
     setRecommendations((prev) => {
       const filtered = prev.filter((v) => {
-        const vid = (v as any).videoId ?? (v as any).id ?? (v as any).video_id ?? "";
+        const vid =
+          (v as any).videoId ?? (v as any).id ?? (v as any).video_id ?? "";
         return vid !== id;
       });
       return shuffle(filtered);
@@ -130,13 +136,17 @@ const KaraokePlayer = () => {
       </form>
 
       {/* Main App Workspace View */}
-      <div style={{ display: "flex", gap: "20px" , marginTop: "-20px"}}>
+      <div style={{ display: "flex", gap: "20px", marginTop: "-20px" }}>
         {/* LEFT COLUMN: Main Karaoke Video Screen */}
         <div style={{ flex: 8 }}>
           <CustomYoutubePlayer videoId={selectedVideoId || "ypcVYB9T32o"} />
-          <h2 style={{ marginTop: "15px" }}>Now Playing : {selectedVideoTitle} </h2>
+          <h2 style={{ marginTop: "15px" }}>
+            Now Playing : {selectedVideoTitle}{" "}
+          </h2>
           <span>
-            {selectedVideoTitle || videos.find((v) => v.videoId === selectedVideoId)?.title || "Default Video"}
+            {selectedVideoTitle ||
+              videos.find((v) => v.videoId === selectedVideoId)?.title ||
+              "Default Video"}
           </span>
         </div>
 
@@ -198,13 +208,23 @@ const KaraokePlayer = () => {
                 <p>Loading your karaoke list...</p>
               ) : (
                 recommendations.map((video) => {
-                  const vid = (video as any).videoId ?? (video as any).id ?? (video as any).video_id ?? "";
-                  const title = (video as any).title ?? (video as any).name ?? "Untitled";
-                  const thumb = (video as any).thumbnail ?? (video as any).thumbnailUrl ?? "";
+                  const vid =
+                    (video as any).videoId ??
+                    (video as any).id ??
+                    (video as any).video_id ??
+                    "";
+                  const title =
+                    (video as any).title ?? (video as any).name ?? "Untitled";
+                  const thumb =
+                    (video as any).thumbnail ??
+                    (video as any).thumbnailUrl ??
+                    "";
                   return (
                     <div
                       key={vid || title}
-                      onClick={() => vid && handleRecommendationClick(vid, title)}
+                      onClick={() =>
+                        vid && handleRecommendationClick(vid, title)
+                      }
                       style={{
                         cursor: "pointer",
                         display: "flex",
@@ -215,7 +235,6 @@ const KaraokePlayer = () => {
                       }}
                     >
                       <img src={thumb} alt={title} style={{ width: "180px" }} />
-              
                     </div>
                   );
                 })
